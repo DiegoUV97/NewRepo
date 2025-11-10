@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Test de Inteligencias Múltiples (Howard Gardner)</title>
+    <style>
+        :root {
+            --bg: #f7fafc;
+            --card: #ffffff;
+            --accent: #2563eb;
+            --muted: #6b7280
+        }
+
+        body {
+            font-family: Inter,Segoe UI,Arial;
+            line-height: 1.4;
+            margin: 0;
+            background: linear-gradient(180deg,#eef2ff,#f7fafc);
+            color: #0f172a;
+            padding: 20px
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 22px;
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(2,6,23,0.08)
+        }
+
+        h1 {
+            margin: 0 0 6px;
+            font-size: 22px
+        }
+
+        p.lead {
+            margin: 0 0 16px;
+            color: var(--muted)
+        }
+
+        .question {
+            padding: 14px 12px;
+            border-radius: 8px;
+            border: 1px solid #eef2ff;
+            margin-bottom: 10px;
+            background: #fbfdff
+        }
+
+        .q-text {
+            font-weight: 600;
+            margin-bottom: 8px
+        }
+
+        .options {
+            display: flex;
+            gap: 8px
+        }
+
+        label.opt {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px dashed #e6eefc;
+            text-align: center;
+            cursor: pointer
+        }
+
+            label.opt input {
+                display: none
+            }
+
+            label.opt.selected {
+                background: var(--accent);
+                color: white;
+                border-style: solid
+            }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 14px
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer
+        }
+
+            button.ghost {
+                background: transparent;
+                color: var(--accent);
+                border: 1px solid rgba(37,99,235,0.18)
+            }
+
+        .results {
+            margin-top: 18px
+        }
+
+        .bar {
+            height: 18px;
+            background: #e6eefc;
+            border-radius: 12px;
+            overflow: hidden
+        }
+
+        .bar-inner {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: white;
+            font-size: 12px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 18px
+        }
+
+        @media(max-width:880px) {
+            .grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .explanation {
+            font-size: 14px;
+            color: var(--muted);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #f1f5f9;
+            background: #fff
+        }
+
+        .top-type {
+            font-weight: 700;
+            color: #08306b
+        }
+
+        footer {
+            margin-top: 18px;
+            font-size: 13px;
+            color: var(--muted)
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test de Inteligencias Múltiples (Howard Gardner)</h1>
+        <p class="lead">Responde con sinceridad. Elige para cada frase: Nunca (1) — Rara vez (2) — A veces (3) — Siempre (4). Al final aparecerá tu(s) inteligencia(s) predominante(s) y una explicación.</p>
+
+        <form id="quiz">
+            <div id="questions"></div>
+
+            <div class="controls">
+                <button type="submit">Ver resultado</button>
+                <button type="button" id="reset" class="ghost">Reiniciar</button>
+                <button type="button" id="download" class="ghost">Descargar resultado</button>
+            </div>
+        </form>
+
+        <div class="results" id="results" aria-live="polite"></div>
+
+        <footer>Basado en la teoría de las inteligencias múltiples de Howard Gardner. Este test es orientativo y no reemplaza una evaluación profesional.</footer>
+    </div>
+
+    <script>
+// Preguntas (texto en español). Cada pregunta tiene la propiedad 'type' con la inteligencia asociada.
+const questionsData = [
+  {q: 'Me expreso con facilidad al hablar y disfruto escribiendo historias, poemas o redactando textos.', type: 'linguistica'},
+  {q: 'Me atraen los números, los rompecabezas lógicos y resolver problemas matemáticos.', type: 'logico'},
+  {q: 'Tengo buena memoria visual: me guío por mapas, diagramas o imágenes mentales.', type: 'espacial'},
+  {q: 'Disfruto del deporte, bailar o aprender a través del movimiento del cuerpo.', type: 'corporal'},
+  {q: 'Reconozco ritmos, me fijo en melodías y aprendo con facilidad a través de la música.', type: 'musical'},
+  {q: 'Me siento cómodo trabajando en equipo y entiendo bien a otras personas.', type: 'interpersonal'},
+  {q: 'Tengo claras mis emociones, motivaciones y conozco mis fortalezas y limitaciones.', type: 'intrapersonal'},
+  {q: 'Me gusta observar la naturaleza y reconozco plantas, animales o patrones ecológicos.', type: 'naturalista'},
+
+  {q: 'Aprendo mejor cuando leo o escucho explicaciones detalladas.', type: 'linguistica'},
+  {q: 'Disfruto diseñar estrategias y seguir pasos lógicos para conseguir un objetivo.', type: 'logico'},
+  {q: 'Me atrae el diseño gráfico, la pintura o imaginar espacios en 3D.', type: 'espacial'},
+  {q: 'Prefiero aprender haciendo, manipulando objetos y ensayo/error.', type: 'corporal'},
+  {q: 'La música influye en mi humor y concentración.', type: 'musical'},
+  {q: 'Siento empatía con facilidad y me interesa cómo piensan los demás.', type: 'interpersonal'},
+  {q: 'Reflexiono sobre mis decisiones y aprendo de mis experiencias.', type: 'intrapersonal'},
+  {q: 'Me preocupa el medio ambiente y disfruto actividades al aire libre.', type: 'naturalista'},
+
+  {q: 'Me resulta fácil aprender idiomas o recordar palabras y significados.', type: 'linguistica'},
+  {q: 'Encuentro patrones y relaciones en datos o conceptos abstractos.', type: 'logico'},
+  {q: 'Me gusta resolver puzzles visuales y juegos de orientación espacial.', type: 'espacial'},
+  {q: 'Uso mis manos y mi cuerpo para crear o reparar cosas con precisión.', type: 'corporal'},
+  {q: 'Me gusta tocar instrumentos o crear ritmos.', type: 'musical'},
+  {q: 'Me involucro en actividades grupales y suelo liderar proyectos con personas.', type: 'interpersonal'},
+  {q: 'Conozco mis reacciones ante el estrés y puedo gestionarlas.', type: 'intrapersonal'},
+  {q: 'Me fijo en detalles naturales y disfruto clasificando animales o plantas.', type: 'naturalista'}
+];
+
+const typesInfo = {
+  linguistica: {name:'Lingüística', desc: 'Habilidad para usar el lenguaje, narración, lectura y escritura.'},
+  logico: {name:'Lógico-matemática', desc: 'Habilidad para el razonamiento lógico, cálculo y resolución de problemas.'},
+  espacial: {name:'Espacial', desc: 'Capacidad para visualizar y manipular imágenes y espacios.'},
+  corporal: {name:'Corporal-kinestésica', desc: 'Uso del cuerpo para expresar ideas o resolver problemas físicos.'},
+  musical: {name:'Musical', desc: 'Sensibilidad a ritmos, tonos y estructura musical.'},
+  interpersonal: {name:'Interpersonal', desc: 'Habilidad para comprender y relacionarse con otras personas.'},
+  intrapersonal: {name:'Intrapersonal', desc: 'Autoconocimiento, manejo de emociones y motivación personal.'},
+  naturalista: {name:'Naturalista', desc: 'Capacidad para identificar y relacionarse con el mundo natural.'}
+};
+
+// Render preguntas
+const questionsDiv = document.getElementById('questions');
+questionsData.forEach((item, idx)=>{
+  const q = document.createElement('div');
+  q.className='question';
+  q.innerHTML = `
+    <div class="q-text">${idx+1}. ${item.q}</div>
+    <div class="options" role="radiogroup" aria-labelledby="q${idx}">
+      <label class="opt"><input type="radio" name="q${idx}" value="1" required>1<br><small>Nunca</small></label>
+      <label class="opt"><input type="radio" name="q${idx}" value="2">2<br><small>Rara vez</small></label>
+      <label class="opt"><input type="radio" name="q${idx}" value="3">3<br><small>A veces</small></label>
+      <label class="opt"><input type="radio" name="q${idx}" value="4">4<br><small>Siempre</small></label>
+    </div>
+  `;
+  questionsDiv.appendChild(q);
+});
+
+// UI: add selected state for labels
+questionsDiv.addEventListener('click', e=>{
+  const label = e.target.closest('label.opt');
+  if(!label) return;
+  const container = label.parentElement;
+  [...container.querySelectorAll('label.opt')].forEach(l=>l.classList.remove('selected'));
+  label.classList.add('selected');
+});
+
+// Calcula resultado
+function calculateResult(formData){
+  const totals = {linguistica:0,logico:0,espacial:0,corporal:0,musical:0,interpersonal:0,intrapersonal:0,naturalista:0};
+  questionsData.forEach((q, idx)=>{
+    const val = parseInt(formData.get('q'+idx));
+    totals[q.type] += val;
+  });
+  return totals;
+}
+
+function getPercentages(totals){
+  // Cada tipo tiene 3 preguntas, puntaje max por tipo = 3 * 4 = 12
+  const max = 12;
+  const p = {};
+  Object.keys(totals).forEach(k=> p[k] = Math.round((totals[k]/max)*100));
+  return p;
+}
+
+function showResults(totals){
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML='';
+  const grid = document.createElement('div');
+  grid.className='grid';
+
+  const left = document.createElement('div');
+  const right = document.createElement('div');
+
+  // Ordena por puntaje
+  const entries = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const topScore = entries[0][1];
+  const topTypes = entries.filter(e=>e[1]===topScore).map(e=>e[0]);
+
+  // Título
+  const h = document.createElement('h2');
+  h.textContent = 'Resultado';
+  left.appendChild(h);
+
+  const p = document.createElement('p');
+  p.innerHTML = 'Tu(s) inteligencia(s) predominante(s): <span class="top-type">' + topTypes.map(t=>typesInfo[t].name).join(', ') + '</span>';
+  left.appendChild(p);
+
+  // Explicación de cada top
+  topTypes.forEach(t=>{
+    const box = document.createElement('div');
+    box.className='explanation';
+    box.innerHTML = `<strong>${typesInfo[t].name}</strong><div style="margin-top:6px">${typesInfo[t].desc}</div>`;
+    left.appendChild(box);
+  });
+
+  // Gráfica simple con barras
+  const h2 = document.createElement('h3');
+  h2.textContent = 'Perfil completo (porcentaje)';
+  right.appendChild(h2);
+
+  const perc = getPercentages(totals);
+  Object.keys(perc).forEach(k=>{
+    const row = document.createElement('div');
+    row.style.marginBottom='10px';
+    row.innerHTML = `<div style="font-weight:600;margin-bottom:6px">${typesInfo[k].name} — ${perc[k]}%</div>
+      <div class="bar"><div class="bar-inner" style="width:${perc[k]}%"></div></div>`;
+    right.appendChild(row);
+  });
+
+  // Añade explicación final
+  const note = document.createElement('p');
+  note.style.color='#475569';
+  note.style.marginTop='12px';
+  note.textContent = 'Consejo: muchas personas muestran varias inteligencias. Usa este perfil para elegir actividades de aprendizaje que te motiven.';
+  left.appendChild(note);
+
+  grid.appendChild(left);
+  grid.appendChild(right);
+  resultsDiv.appendChild(grid);
+
+  // Guarda resultado en atributo para exportar
+  resultsDiv.dataset.json = JSON.stringify({totals,percent:perc,top:topTypes});
+}
+
+// Form submit
+const form = document.getElementById('quiz');
+form.addEventListener('submit', e=>{
+  e.preventDefault();
+  const fd = new FormData(form);
+  // validar
+  for(let i=0;i<questionsData.length;i++){
+    if(!fd.get('q'+i)){
+      alert('Por favor responde todas las preguntas.');
+      return;
+    }
+  }
+  const totals = calculateResult(fd);
+  showResults(totals);
+  window.scrollTo({top:document.getElementById('results').offsetTop-10,behavior:'smooth'});
+});
+
+// Reiniciar
+document.getElementById('reset').addEventListener('click', ()=>{
+  form.reset();
+  document.getElementById('results').innerHTML='';
+  // quitar clases selected
+  [...document.querySelectorAll('label.opt')].forEach(l=>l.classList.remove('selected'));
+});
+
+// Descargar resultado (JSON simple)
+document.getElementById('download').addEventListener('click', ()=>{
+  const resultsDiv = document.getElementById('results');
+  const data = resultsDiv.dataset.json;
+  if(!data){ alert('Primero obtén tu resultado.'); return; }
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'resultado_inteligencias.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+    </script>
+</body>
+</html>
